@@ -88,7 +88,11 @@ async def validate_share(token: str, body: dict, db: Session = Depends(get_db)):
     link = db.query(ShareLink).filter(ShareLink.token == token).first()
     if not link or not link.active:
         raise HTTPException(status_code=404, detail="Invalid or revoked link")
-    if link.expires_at and link.expires_at < datetime.now(timezone.utc):
+    expires_at = link.expires_at
+    if expires_at and expires_at.tzinfo is None:
+        from datetime import timezone as _tz
+        expires_at = expires_at.replace(tzinfo=_tz.utc)
+    if expires_at and expires_at < datetime.now(timezone.utc):
         link.active = False
         db.commit()
         raise HTTPException(status_code=410, detail="Share link expired")

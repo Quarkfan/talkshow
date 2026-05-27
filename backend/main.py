@@ -10,13 +10,32 @@ from starlette.middleware.sessions import SessionMiddleware
 from .config import CONTENT_DIR, SECRET_KEY, COOKIE_MAX_AGE
 from .database import engine, Base, SessionLocal, get_db
 from .init_db import init_db
-from .models import ShareLink, Theme, AuditLog
+from .models import ShareLink, Theme, AuditLog, User
+from .auth import hash_password
 from .routes import auth, themes, shares, audit
+
+
+def _seed_admin():
+    """Create default admin user if not exists."""
+    username = os.getenv("ADMIN_USERNAME", "admin")
+    password = os.getenv("ADMIN_PASSWORD", "changeme")
+    db = SessionLocal()
+    try:
+        existing = db.query(User).filter(User.username == username).first()
+        if existing:
+            return
+        user = User(username=username, password_hash=hash_password(password), role="admin")
+        db.add(user)
+        db.commit()
+        print(f"[talkshow] Admin user created: {username}")
+    finally:
+        db.close()
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    _seed_admin()
     app.state.content_dir = CONTENT_DIR
     init_db(CONTENT_DIR)
     yield
@@ -73,7 +92,11 @@ async def share_access(token: str, request: Request, password: str | None = None
         link = db.query(ShareLink).filter(ShareLink.token == token).first()
         if not link or not link.active:
             raise HTTPException(status_code=404, detail="Invalid or revoked link")
-        if link.expires_at and link.expires_at < datetime.now(timezone.utc):
+        expires_at = link.expires_at
+        if expires_at and expires_at.tzinfo is None:
+            from datetime import timezone as _tz
+            expires_at = expires_at.replace(tzinfo=_tz.utc)
+        if expires_at and expires_at < datetime.now(timezone.utc):
             link.active = False
             db.commit()
             raise HTTPException(status_code=410, detail="Expired")
