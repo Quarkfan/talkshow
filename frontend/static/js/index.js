@@ -29,3 +29,6 @@ async function loadThemes() {
 }
 
 document.addEventListener('DOMContentLoaded', loadThemes);
+
+// Auto-refresh every 10 seconds
+setInterval(loadThemes, 10000);

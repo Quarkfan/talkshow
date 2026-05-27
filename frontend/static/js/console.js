@@ -151,3 +151,10 @@ async function loadAudit() {
 }
 
 document.addEventListener('DOMContentLoaded', loadConsole);
+
+// Auto-refresh every 5 seconds
+setInterval(() => {
+  loadThemes();
+  loadShares();
+  loadAudit();
+}, 5000);
