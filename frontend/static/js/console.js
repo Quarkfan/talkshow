@@ -4,7 +4,6 @@ async function loadConsole() {
   const user = await checkAuth();
   if (!user) { window.location.href = '/login'; return; }
   document.getElementById('user-info').textContent = `${user.username} (${user.role})`;
-
   loadThemes();
   loadShares();
   loadAudit();
@@ -12,7 +11,7 @@ async function loadConsole() {
 
 async function loadThemes() {
   try {
-    const res = await fetch('/api/themes');
+    const res = await fetch('/api/themes', { credentials: 'same-origin' });
     if (!res.ok) { window.location.href = '/login'; return; }
     const themes = await res.json();
     const tbody = document.getElementById('themes-body');
@@ -41,18 +40,19 @@ async function loadThemes() {
 }
 
 async function toggleVisibility(id) {
-  await fetch(`/api/themes/${id}/visibility`, { method: 'PATCH' });
+  await fetch(`/api/themes/${id}/visibility`, { method: 'PATCH', credentials: 'same-origin' });
+  loadThemes();
+  loadShares();
 }
 
 async function rescanThemes() {
-  const res = await fetch('/api/themes/rescan', { method: 'POST' });
+  const res = await fetch('/api/themes/rescan', { method: 'POST', credentials: 'same-origin' });
   if (res.ok) loadThemes();
 }
 
-// Share links
 async function loadShares() {
   try {
-    const res = await fetch('/api/shares');
+    const res = await fetch('/api/shares', { credentials: 'same-origin' });
     if (!res.ok) return;
     const shares = await res.json();
     const tbody = document.getElementById('shares-body');
@@ -60,30 +60,37 @@ async function loadShares() {
       tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--text-muted)">暂无分享链接</td></tr>';
       return;
     }
-    tbody.innerHTML = shares.map(s => `
+    tbody.innerHTML = shares.map(s => {
+      const fullToken = s.token_full || '';
+      return `
       <tr>
         <td>${s.theme_title}</td>
         <td><code style="color:var(--primary)">${s.token}</code>${s.has_password ? ' 🔒' : ''}</td>
         <td style="font-size:.75rem;color:var(--text-muted)">${s.expires_at ? new Date(s.expires_at).toLocaleDateString() : '永久'}</td>
         <td>
-          <button class="btn" onclick="copyShareLink('/s/${s.token_full || s.token.replace('...', '')}')">复制</button>
+          <button class="btn" onclick="copyShareLink('/s/${fullToken}')">复制</button>
           ${s.active ? `<button class="btn btn-danger" onclick="revokeShare(${s.id})">撤销</button>` : '<span style="color:var(--text-muted)">已撤销</span>'}
         </td>
       </tr>
-    `).join('');
+      `;
+    }).join('');
   } catch (e) {}
 }
 
 async function revokeShare(id) {
-  await fetch(`/api/shares/${id}`, { method: 'DELETE' });
+  await fetch(`/api/shares/${id}`, { method: 'DELETE', credentials: 'same-origin' });
   loadShares();
 }
 
 function copyShareLink(url) {
-  navigator.clipboard.writeText(window.location.origin + url);
+  const fullUrl = window.location.origin + url;
+  navigator.clipboard.writeText(fullUrl).then(() => {
+    alert('已复制: ' + fullUrl);
+  }).catch(() => {
+    prompt('复制链接:', fullUrl);
+  });
 }
 
-// Modal for creating share links
 let currentShareThemeId = null;
 
 function showCreateShare(themeId, themeTitle) {
@@ -105,6 +112,7 @@ async function createShare() {
 
   const res = await fetch('/api/shares', {
     method: 'POST',
+    credentials: 'same-origin',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ theme_id: currentShareThemeId, password, expires_days: expiresDays })
   });
@@ -112,20 +120,19 @@ async function createShare() {
   if (res.ok) {
     const data = await res.json();
     const url = window.location.origin + data.url + (password ? `?password=${password}` : '');
-    navigator.clipboard.writeText(url).then(() => {
-      alert('分享链接已复制到剪贴板');
-    });
     hideShareModal();
     loadShares();
+    prompt('分享链接（已自动复制，如失败请手动复制）:', url);
+    navigator.clipboard.writeText(url).catch(() => {});
   } else {
-    alert('创建失败');
+    const err = await res.json().catch(() => ({}));
+    alert('创建失败: ' + (err.detail || '未知错误'));
   }
 }
 
-// Audit log
 async function loadAudit() {
   try {
-    const res = await fetch('/api/audit?limit=20');
+    const res = await fetch('/api/audit?limit=20', { credentials: 'same-origin' });
     if (!res.ok) return;
     const logs = await res.json();
     const container = document.getElementById('audit-log');
@@ -143,5 +150,4 @@ async function loadAudit() {
   } catch (e) {}
 }
 
-// Run on load
 document.addEventListener('DOMContentLoaded', loadConsole);

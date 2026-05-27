@@ -76,7 +76,11 @@ async def login_page():
 
 
 @app.get("/console")
-async def console_page():
+async def console_page(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/login", status_code=302)
     return FileResponse(str(FRONTEND / "console.html"))
 
 
