@@ -55,13 +55,9 @@ app.include_router(themes.router)
 app.include_router(shares.router)
 app.include_router(audit.router)
 
-# Serve talkResources content (read-only static files)
-app.mount("/content", StaticFiles(directory=str(CONTENT_DIR)), name="content")
-
 # Serve frontend static assets
 FRONTEND = Path(__file__).parent.parent / "frontend"
 app.mount("/static", StaticFiles(directory=str(FRONTEND / "static")), name="static")
-
 
 # --- Page routes ---
 
@@ -82,6 +78,44 @@ async def console_page(request: Request):
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/login", status_code=302)
     return FileResponse(str(FRONTEND / "console.html"))
+
+
+# --- Protected content serving (replaces StaticFiles mount) ---
+
+@app.get("/content/{path:path}")
+async def serve_content(path: str, request: Request):
+    """Serve files from talkResources with visibility checks.
+
+    Rules:
+    - Admin (logged in): access all content
+    - Anonymous: only visible themes' files are accessible
+    - presentations/, references/, thinking/, tools/ are always accessible (shared assets)
+    """
+    from urllib.parse import unquote
+
+    db = SessionLocal()
+    try:
+        full_path = CONTENT_DIR / unquote(path)
+        if not full_path.exists() or not full_path.is_file():
+            raise HTTPException(status_code=404, detail="File not found")
+
+        # Admin can access everything
+        user_id = request.session.get("user_id")
+        if user_id:
+            return FileResponse(str(full_path))
+
+        # For anonymous: check if this is a theme file that is hidden
+        # Theme files are under themes/
+        if path.startswith("themes/"):
+            theme_file_name = full_path.name
+            theme = db.query(Theme).filter(Theme.theme_file == f"themes/{theme_file_name}").first()
+            if theme and not theme.visible:
+                raise HTTPException(status_code=403, detail="This theme is not publicly available")
+
+        # All other content (presentations, references, thinking) is accessible
+        return FileResponse(str(full_path))
+    finally:
+        db.close()
 
 
 # --- Share link access ---
