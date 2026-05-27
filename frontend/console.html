@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>控制台 - 分享导航</title>
+<link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+
+<div class="container">
+  <div class="console-header">
+    <h1>🎛 分享主题管理</h1>
+    <div style="display:flex;align-items:center;gap:16px">
+      <span class="user-info" id="user-info"></span>
+      <button class="btn" onclick="logout()">退出</button>
+    </div>
+  </div>
+
+  <!-- Themes Section -->
+  <div class="section">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h2 style="border:none;margin:0;padding:0">主题列表</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn" onclick="rescanThemes()">🔄 重新扫描内容</button>
+        <button class="btn" onclick="loadThemes()">刷新</button>
+      </div>
+    </div>
+    <table style="margin-top:12px">
+      <thead>
+        <tr><th>主题</th><th>文件</th><th>公开</th><th>操作</th></tr>
+      </thead>
+      <tbody id="themes-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Share Links Section -->
+  <div class="section">
+    <h2>分享链接</h2>
+    <table>
+      <thead>
+        <tr><th>主题</th><th>令牌</th><th>过期时间</th><th>操作</th></tr>
+      </thead>
+      <tbody id="shares-body"></tbody>
+    </table>
+  </div>
+
+  <!-- Audit Log Section -->
+  <div class="section">
+    <h2>审计日志</h2>
+    <div id="audit-log"></div>
+  </div>
+
+  <div class="footer">Talkshow Platform</div>
+</div>
+
+<!-- Share Creation Modal -->
+<div class="modal-overlay" id="share-modal">
+  <div class="modal">
+    <h3 id="share-theme-label">创建分享链接</h3>
+    <label>访问密码（可选，留空则无需密码）</label>
+    <input type="text" id="share-pw" placeholder="留空或输入密码">
+    <label>过期天数（可选，留空则永久有效）</label>
+    <input type="number" id="share-days" placeholder="例如 7" min="1">
+    <div class="btn-row">
+      <button class="btn" onclick="hideShareModal()">取消</button>
+      <button class="btn btn-primary" onclick="createShare()">创建</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/js/auth.js"></script>
+<script src="/static/js/console.js"></script>
+</body>
+</html>

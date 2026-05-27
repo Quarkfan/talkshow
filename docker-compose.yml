@@ -1,0 +1,35 @@
+services:
+  platform:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: talkshow-platform
+    ports:
+      - "8800:8000"
+    volumes:
+      # Mount talkResources as /content (read-only)
+      - ../talkResources:/content:ro
+      # Persist SQLite database
+      - ./data:/app/data
+    environment:
+      - CONTENT_DIR=/content
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-change-me}
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-changeme}
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  ai-tool-finder:
+    build:
+      context: ../talkResources/tools/ai-tool-finder
+      dockerfile: Dockerfile
+    container_name: talkshow-tool-finder
+    ports:
+      - "18000:8000"
+    environment:
+      - LLM_API_BASE=https://coding.dashscope.aliyuncs.com/v1
+      - LLM_MODEL=qwen3.6-plus
+    env_file:
+      - .env
+    restart: unless-stopped
