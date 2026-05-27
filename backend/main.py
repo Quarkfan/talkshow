@@ -88,8 +88,7 @@ async def serve_content(path: str, request: Request):
 
     Rules:
     - Admin (logged in): access all content
-    - Anonymous: only visible themes' files are accessible
-    - presentations/, references/, thinking/, tools/ are always accessible (shared assets)
+    - Anonymous: if any theme is visible, access all content; otherwise block
     """
     from urllib.parse import unquote
 
@@ -104,15 +103,11 @@ async def serve_content(path: str, request: Request):
         if user_id:
             return FileResponse(str(full_path))
 
-        # For anonymous: check if this is a theme file that is hidden
-        # Theme files are under themes/
-        if path.startswith("themes/"):
-            theme_file_name = full_path.name
-            theme = db.query(Theme).filter(Theme.theme_file == f"themes/{theme_file_name}").first()
-            if theme and not theme.visible:
-                raise HTTPException(status_code=403, detail="This theme is not publicly available")
+        # Anonymous: check if there's at least one visible theme
+        has_visible = db.query(Theme).filter(Theme.visible == True).first()
+        if not has_visible:
+            raise HTTPException(status_code=403, detail="No content available")
 
-        # All other content (presentations, references, thinking) is accessible
         return FileResponse(str(full_path))
     finally:
         db.close()
