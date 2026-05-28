@@ -198,6 +198,34 @@ async def serve_content(path: str, request: Request):
         db.close()
 
 
+@app.get("/api/public-content")
+async def list_public_content():
+    """List all publicly accessible content files for the homepage. No auth required."""
+    from .utils import scan_files, resolve_file_theme
+    files = scan_files(str(CONTENT_DIR))
+    db = SessionLocal()
+    try:
+        themes = db.query(Theme).all()
+        theme_map = {t.id: t for t in themes}
+        db_rules = {r.path: r for r in db.query(ContentRule).all()}
+        result = []
+        for f in files:
+            rule = db_rules.get(f)
+            parent_theme = resolve_file_theme(f, themes)
+            theme_visible = parent_theme.visible if parent_theme else False
+            public = rule.public if rule else theme_visible
+            if not public:
+                continue
+            result.append({
+                "path": f,
+                "theme_id": parent_theme.id if parent_theme else None,
+                "theme_title": parent_theme.title if parent_theme else None,
+            })
+        return result
+    finally:
+        db.close()
+
+
 # --- Theme entry point (anonymous, slug-based, no real path exposure) ---
 
 

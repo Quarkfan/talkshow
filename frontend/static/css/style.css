@@ -231,3 +231,51 @@ th { color: var(--text-muted); font-weight: 600; font-size: .75rem; text-transfo
   .grid { grid-template-columns: 1fr; }
   .console-header { flex-direction: column; gap: 8px; align-items: flex-start; }
 }
+
+/* Home tab bar */
+.tab-bar {
+  display: flex; gap: 4px; margin-bottom: 24px; justify-content: center;
+}
+.home-tab-btn {
+  padding: 8px 24px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--text-muted); font-size: .9rem;
+  cursor: pointer; transition: all .2s; font-weight: 500;
+}
+.home-tab-btn:hover { color: var(--text); border-color: var(--border-hover); }
+.home-tab-btn.active {
+  background: linear-gradient(135deg, rgba(56,189,248,.15), rgba(167,139,250,.15));
+  border-color: var(--primary); color: var(--text);
+}
+
+/* Content list */
+.content-folder {
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); margin-bottom: 12px; overflow: hidden;
+}
+.content-folder .folder-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px 16px; cursor: pointer; user-select: none;
+  background: rgba(20,26,39,.5); transition: background .15s;
+}
+.content-folder .folder-header:hover { background: var(--card-hover); }
+.content-folder .folder-arrow { font-size: .7rem; transition: transform .15s; color: var(--text-muted); }
+.content-folder .folder-name { font-weight: 600; font-size: .85rem; }
+.content-folder .folder-count { font-size: .7rem; color: var(--text-muted); margin-left: 4px; }
+.content-folder .folder-items { display: none; padding: 8px 12px; }
+
+.content-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 8px; border-bottom: 1px solid rgba(148,163,184,.08);
+}
+.content-item:last-child { border-bottom: none; }
+.content-item code { font-size: .78rem; color: var(--text-secondary); word-break: break-all; flex: 1; }
+
+.btn-sm {
+  padding: 3px 10px; font-size: .72rem; border-radius: 4px;
+  border: 1px solid var(--border); background: var(--card); color: var(--primary);
+  cursor: pointer; text-decoration: none; transition: all .15s; flex-shrink: 0;
+}
+.btn-sm:hover { border-color: var(--primary); background: var(--card-hover); }
+
+#content-grid { margin-bottom: 48px; }
+
