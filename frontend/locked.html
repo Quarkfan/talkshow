@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>已锁定 - 分享导航</title>
+<link rel="stylesheet" href="/static/css/style.css">
+<style>
+.locked-container {
+  display: flex; align-items: center; justify-content: center;
+  min-height: 100vh; position: relative; z-index: 1;
+}
+.locked-box {
+  text-align: center; padding: 48px; max-width: 480px; width: 90%;
+  background: var(--card); border: 1px solid var(--border);
+  border-radius: var(--radius); box-shadow: 0 8px 40px rgba(0,0,0,.3);
+}
+.locked-icon { font-size: 4rem; margin-bottom: 24px; display: block; }
+.locked-box h1 { font-size: 1.6rem; margin-bottom: 12px; }
+.locked-box p { color: var(--text-secondary); line-height: 1.7; margin-bottom: 24px; }
+</style>
+</head>
+<body>
+<div class="glow glow-1"></div>
+<div class="glow glow-2"></div>
+
+<div class="locked-container">
+  <div class="locked-box">
+    <span class="locked-icon">🔒</span>
+    <h1>此分享已锁定内容访问</h1>
+    <p>此分享链接仅允许查看主题页面，不允许访问主题下的具体内容文件。如需获取完整内容，请联系内容发布者或获取更高权限的分享链接。</p>
+    <a href="/" class="btn btn-primary" style="display:inline-block;text-decoration:none;padding:10px 24px">返回首页</a>
+  </div>
+</div>
+</body>
+</html>

@@ -19,38 +19,78 @@
     </div>
   </div>
 
-  <!-- Themes Section -->
-  <div class="section">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h2 style="border:none;margin:0;padding:0">主题列表</h2>
-      <div style="display:flex;gap:8px">
-        <button class="btn" onclick="rescanThemes()">🔄 重新扫描内容</button>
-        <button class="btn" onclick="loadThemes()">刷新</button>
+  <!-- Tab Navigation -->
+  <div style="display:flex;gap:4px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:0">
+    <button class="tab-btn active" id="tab-themes-btn" onclick="switchTab('themes')">主题管理</button>
+    <button class="tab-btn" id="tab-shares-btn" onclick="switchTab('shares')">分享链接</button>
+    <button class="tab-btn" id="tab-content-btn" onclick="switchTab('content')">内容权限</button>
+    <button class="tab-btn" id="tab-audit-btn" onclick="switchTab('audit')">审计日志</button>
+  </div>
+
+  <!-- Themes Tab -->
+  <div class="tab-panel active" id="tab-themes">
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="border:none;margin:0;padding:0">主题列表</h2>
+        <div style="display:flex;gap:8px">
+          <button class="btn" onclick="rescanThemes()">🔄 从 Git 拉取并刷新</button>
+          <button class="btn" onclick="loadThemes()">刷新</button>
+        </div>
       </div>
+      <table style="margin-top:12px">
+        <thead><tr><th>主题</th><th>文件</th><th>主页显示</th><th>内容可访问</th><th>编辑</th><th>操作</th></tr></thead>
+        <tbody id="themes-body"></tbody>
+      </table>
     </div>
-    <table style="margin-top:12px">
-      <thead>
-        <tr><th>主题</th><th>文件</th><th>公开</th><th>操作</th></tr>
-      </thead>
-      <tbody id="themes-body"></tbody>
-    </table>
   </div>
 
-  <!-- Share Links Section -->
-  <div class="section">
-    <h2>分享链接</h2>
-    <table>
-      <thead>
-        <tr><th>主题</th><th>令牌</th><th>过期时间</th><th>操作</th></tr>
-      </thead>
-      <tbody id="shares-body"></tbody>
-    </table>
+  <!-- Shares Tab -->
+  <div class="tab-panel" id="tab-shares" style="display:none">
+    <div class="section">
+      <h2>分享链接</h2>
+      <table>
+        <thead><tr><th>主题</th><th>令牌</th><th>密码</th><th>内容访问</th><th>文件权限</th><th>过期时间</th><th>操作</th></tr></thead>
+        <tbody id="shares-body"></tbody>
+      </table>
+    </div>
   </div>
 
-  <!-- Audit Log Section -->
-  <div class="section">
-    <h2>审计日志</h2>
-    <div id="audit-log"></div>
+  <!-- Content Rules Tab -->
+  <div class="tab-panel" id="tab-content" style="display:none">
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="border:none;margin:0;padding:0">内容权限</h2>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-primary" onclick="bulkToggle(true)">全部公开</button>
+          <button class="btn btn-danger" onclick="bulkToggle(false)">全部隐藏</button>
+          <button class="btn" onclick="pullAndLoadContentRules()">🔄 从 Git 拉取</button>
+          <button class="btn" onclick="copyAllContentLinks()">复制全部链接</button>
+          <button class="btn" onclick="loadContentRules()">刷新</button>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:.75rem;color:var(--text-muted)">
+        未标记的文件默认公开。隐藏后，未登录用户访问该文件将跳转到禁止访问页面。点击「复制链接」可获取公开访问地址。
+      </div>
+      <div id="content-rules-list" style="margin-top:16px;max-height:500px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- Audit Tab -->
+  <div class="tab-panel" id="tab-audit" style="display:none">
+    <div class="section">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <h2 style="border:none;margin:0;padding:0">审计日志</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="date" id="audit-cleanup-date" style="padding:6px 10px;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.8rem">
+          <button class="btn btn-danger" onclick="cleanupAudit()">清理旧日志</button>
+          <button class="btn" onclick="loadAudit()">刷新</button>
+        </div>
+      </div>
+      <div style="margin-top:8px;font-size:.75rem;color:var(--text-muted)">
+        清理指定日期之前的所有审计日志。
+      </div>
+      <div id="audit-log"></div>
+    </div>
   </div>
 
   <div class="footer">Talkshow Platform</div>
@@ -71,7 +111,118 @@
   </div>
 </div>
 
-<script src="/static/js/auth.js"></script>
-<script src="/static/js/console.js"></script>
+<!-- Theme Edit Modal -->
+<div class="modal-overlay" id="theme-edit-modal" onclick="hideThemeEditModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <h3>编辑主题卡片</h3>
+
+    <div class="logo-section">
+      <div id="logo-preview-area" class="logo-preview"></div>
+      <div class="logo-actions">
+        <button class="btn" onclick="document.getElementById('logo-file-input').click()">上传图片</button>
+        <input type="file" id="logo-file-input" accept="image/*" style="display:none" onchange="uploadLogo()">
+        <button class="btn btn-danger" onclick="removeLogo()">删除</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+        <label style="margin:0;font-size:.75rem;color:var(--text-muted)">Logo 背景色</label>
+        <input type="color" id="logo-bg-picker" value="#141a27" oninput="pendingLogoBg=this.value;document.getElementById('logo-bg-text').value=this.value" onchange="pendingLogoBg=this.value;document.getElementById('logo-bg-text').value=this.value" style="width:32px;height:24px;border:none;padding:0;cursor:pointer;border-radius:4px">
+        <input type="text" id="logo-bg-text" value="#141a27" placeholder="留空不设置" style="flex:1;padding:4px 8px;border-radius:4px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:.75rem;font-family:monospace">
+        <button class="btn" onclick="clearLogoBg()" style="padding:4px 8px;font-size:.7rem">清除</button>
+      </div>
+      <div class="emoji-picker" id="emoji-picker"></div>
+    </div>
+
+    <label>标题</label>
+    <input type="text" id="theme-edit-title" placeholder="主题标题">
+    <label>介绍</label>
+    <input type="text" id="theme-edit-description" placeholder="主题介绍">
+    <div class="btn-row">
+      <button class="btn" onclick="hideThemeEditModal()">取消</button>
+      <button class="btn btn-primary" onclick="saveThemeEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- Share File Rules Modal -->
+<div class="modal-overlay" id="share-file-rules-modal" onclick="hideShareFileRulesModal()">
+  <div class="modal modal-wide" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h3 id="sfr-modal-title" style="margin:0">文件权限</h3>
+      <button class="btn" onclick="hideShareFileRulesModal()">关闭</button>
+    </div>
+    <div style="margin-bottom:12px;font-size:.75rem;color:var(--text-muted)">
+      为该分享链接设置每个文件的访问权限。未设置规则的文件遵循「内容访问」开关。
+    </div>
+    <div id="sfr-file-list" style="max-height:400px;overflow-y:auto"></div>
+  </div>
+</div>
+
+<style>
+.tab-btn {
+  padding: 8px 16px; border: none; background: none; color: var(--text-muted);
+  font-size: .85rem; cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all .2s; font-weight: 500;
+}
+.tab-btn:hover { color: var(--text); }
+.tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+.tab-panel { animation: fadeIn .2s; }
+@keyframes fadeIn { from { opacity: 0 } to { opacity: 1 } }
+
+.logo-section { margin-bottom: 16px; }
+.logo-preview {
+  width: 64px; height: 64px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--border); border-radius: 12px; margin-bottom: 12px;
+  background: var(--card); font-size: 2.5rem; overflow: hidden;
+}
+.logo-preview img { width: 48px; height: 48px; object-fit: contain; border-radius: 8px; }
+.logo-actions { display: flex; gap: 8px; margin-bottom: 12px; }
+.emoji-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+.emoji-option {
+  width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
+  font-size: 1.2rem; border: 1px solid var(--border); border-radius: 6px; cursor: pointer;
+  background: var(--card); transition: all .15s;
+}
+.emoji-option:hover { background: var(--card-hover); border-color: var(--border-hover); }
+.emoji-option.selected { border-color: var(--primary); background: rgba(56,189,248,.1); }
+
+.rule-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 12px; border: 1px solid var(--border); border-radius: 6px;
+  margin-bottom: 4px; background: var(--card);
+}
+.rule-item:hover { background: var(--card-hover); }
+.rule-item code { font-size: .8rem; color: var(--text-secondary); word-break: break-all; flex: 1; margin-right: 12px; }
+.rule-item .badge {
+  font-size: .7rem; padding: 2px 8px; border-radius: 4px; font-weight: 600;
+  margin-right: 12px;
+}
+.badge-public { background: rgba(52,211,153,.1); color: var(--success); }
+.badge-hidden { background: rgba(248,113,113,.1); color: var(--danger); }
+
+.folder-group { margin-bottom: 8px; }
+.folder-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 10px 12px; border-radius: 8px; cursor: pointer;
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  transition: background .15s; user-select: none;
+}
+.folder-header:hover { background: var(--card-hover); }
+.folder-arrow { font-size: .7rem; transition: transform .15s; color: var(--text-muted); flex-shrink: 0; }
+.folder-name { font-weight: 600; font-size: .85rem; color: var(--text); }
+.folder-count { font-size: .7rem; color: var(--text-muted); margin-left: 4px; }
+.folder-items { display: none; padding: 4px 0 4px 16px; }
+
+#toast {
+  position: fixed; bottom: 32px; left: 50%; transform: translateX(-50%) translateY(20px);
+  background: var(--card); color: var(--text); border: 1px solid var(--border);
+  padding: 12px 24px; border-radius: 8px; font-size: .85rem;
+  opacity: 0; pointer-events: none; transition: all .25s;
+  box-shadow: 0 8px 32px rgba(0,0,0,.3); z-index: 999;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+
+<script src="/static/js/auth.js?v=5"></script>
+<script src="/static/js/console.js?v=5"></script>
 </body>
 </html>
