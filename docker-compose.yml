@@ -7,8 +7,11 @@ services:
     ports:
       - "8800:8000"
     volumes:
-      # Mount talkResources as /content (read-only)
-      - ../talkResources:/content:ro
+      # Isolated content volume (git clones directly into container)
+      - content-data:/content
+      # SSH key for git pull
+      - ~/.ssh/id_ed25519_github:/root/.ssh/id_ed25519_github:ro
+      - ~/.ssh/known_hosts:/root/.ssh/known_hosts:ro
       # Persist SQLite database
       - ./data:/app/data
     environment:
@@ -33,3 +36,6 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+
+volumes:
+  content-data:
